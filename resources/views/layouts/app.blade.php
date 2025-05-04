@@ -33,9 +33,9 @@
             <!-- Page Content -->
 
             <div class="flex justify-end p-4">
-                        <button id="toggle-dark-mode" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                        <!-- <button id="toggle-dark-mode" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
                             Cambiar Modo
-                        </button>
+                        </button> -->
                     </div>
 
                     <main>

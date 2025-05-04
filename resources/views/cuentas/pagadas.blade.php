@@ -10,6 +10,14 @@
 
             @if ($cuentas->count() > 0)
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow sm:rounded-lg">
+
+                <div class="flex items-center justify-between mb-4" >
+                    <a href="{{ route('cuentas.exportarPagadas') }}" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">          
+                        📥 Exportar Cuentas Pagadas en Excel
+                    </a>
+                </div>
+                
+
                     <table class="min-w-full text-sm text-left">
                         <thead class="bg-gray-700 text-white">
                             <tr>

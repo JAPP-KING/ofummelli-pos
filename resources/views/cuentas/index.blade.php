@@ -15,6 +15,49 @@
                         </div>
                     @endif
 
+                <div class="flex items-center justify-between mb-4"> 
+
+                    <form method="GET" action="{{ route('cuentas.index') }}" class="mb-4 flex items-center space-x-2">
+                        <div class="relative w-full max-w-sm">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <!-- Lupa (Heroicons) -->
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1110.5 3a7.5 7.5 0 016.15 13.65z"/>
+                                </svg>
+                            </span>
+                            <input type="text" name="search" value="{{ request('search') }}"
+                                placeholder="Buscar cuenta por cliente, responsable o estación..."
+                                class="pl-10 pr-4 py-2 border rounded-md w-full text-gray-900"
+                            >
+                        </div>
+
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                            Buscar
+                        </button>
+
+                        @if(request('search'))
+                            <a href="{{ route('cuentas.index') }}"
+                            class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+                                Limpiar
+                            </a>
+                        @endif
+                    </form>
+
+                    {{-- Botón para crear nueva cuenta --}}
+                        <a href="{{ route('cuentas.create') }}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                            + Nueva Cuenta
+                        </a>
+
+                        {{-- Botón para ver Cuentas Pagadas --}}
+                        <a href="{{ route('cuentas.pagadas') }}" class="bg-indigo-600 text-white px-4 py-2 rounded  hover:bg-indigo-700">
+                            Ver Cuentas Pagadas
+                        </a>
+                    </div>
+                </div>
+
+
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead class="bg-gray-700 text-white">
                             <tr>

@@ -8,18 +8,38 @@ use App\Models\Producto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use Illuminate\Support\Facades\Response;
 
 class CuentaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $cuentas = Cuenta::where('pagada', false)
-                        ->orWhereNull('pagada')
-                        ->orderBy('created_at', 'desc')
-                        ->paginate(10);
-
+        $search = $request->input('search');
+    
+        $cuentas = Cuenta::with('cliente')
+            ->where('pagada', false) // ✅ Agregado: solo mostrar cuentas NO pagadas
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('cliente', function ($subQuery) use ($search) {
+                        $subQuery->where('nombre', 'like', "%{$search}%");
+                    })
+                    ->orWhere('cliente_nombre', 'like', "%{$search}%") // Agregado: buscar en cliente_nombre
+                    ->orWhere('responsable_pedido', 'like', "%{$search}%")
+                    ->orWhere('estacion', 'like', "%{$search}%");
+                });
+            })
+            ->orderByDesc('fecha_apertura')
+            ->paginate(10)
+            ->appends(['search' => $search]);
+    
         return view('cuentas.index', compact('cuentas'));
     }
+
 
     public function create()
     {
@@ -125,20 +145,15 @@ class CuentaController extends Controller
         return view('cuentas.show', compact('cuenta', 'productos'));
     }
 
-    public function edit(Cuenta $cuenta)
+    public function edit($id)
 {
-    // Obtener todos los clientes y productos disponibles
+    $cuenta = Cuenta::findOrFail($id);
     $clientes = Cliente::all();
     $productos = Producto::orderBy('nombre')->get();
 
-    // Asegurar que los pagos estén inicializados como colección vacía si no existen
-    $cuenta->pagos = $cuenta->pagos ?? collect();
-
-    // Decodificar productos y métodos de pago guardados en JSON
     $cuenta->productos = json_decode($cuenta->productos, true) ?? [];
     $cuenta->metodos_pago = json_decode($cuenta->metodos_pago, true) ?? [];
 
-    // Convertir productos a formato JS-friendly
     $productosJS = $productos->mapWithKeys(function ($producto) {
         return [$producto->id => [
             'nombre' => $producto->nombre,
@@ -146,14 +161,10 @@ class CuentaController extends Controller
         ]];
     });
 
-    // Preparar productos seleccionados y cantidades
     $productosSeleccionados = $cuenta->productos;
     $cantidadesSeleccionadas = collect($productosSeleccionados)->pluck('cantidad')->toArray();
-
-    // Guardar los métodos de pago en una variable separada para la vista
     $metodosPago = $cuenta->metodos_pago;
 
-    // Pasar todo a la vista edit.blade.php
     return view('cuentas.edit', compact(
         'cuenta',
         'clientes',
@@ -290,6 +301,119 @@ class CuentaController extends Controller
         }
 
         return response()->json($results);
+
+        $search = $request->input('search');
+
+$cuentas = Cuenta::query()
+    ->when($search, function ($query, $search) {
+        $query->where('cliente_nombre', 'like', "%{$search}%")
+              ->orWhere('responsable_pedido', 'like', "%{$search}%")
+              ->orWhere('estacion', 'like', "%{$search}%");
+    })
+    ->orderByDesc('fecha_apertura')
+    ->paginate(10)
+    ->appends(['search' => $search]);
+
     }
+
+    public function exportarCuentasPagadas()
+{
+    $cuentasPagadas = Cuenta::where('pagada', true)->get();
+    // luego:
+    $cuentas = Cuenta::where('pagada', true)->get();
+    $productos_db = Producto::all()->keyBy('id'); // Cache de productos
+
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Encabezados
+    $encabezados = ['ID', 'Cliente', 'Responsable', 'Estación', 'Total', 'Fecha', 'Método de Pago', 'Pedido Hecho'];
+    $col = 'A';
+    foreach ($encabezados as $titulo) {
+        $sheet->setCellValue("{$col}1", $titulo);
+        $col++;
+    }
+
+    // Estilo de encabezado
+    $headerStyle = [
+        'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '4F81BD']],
+        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+    ];
+    $sheet->getStyle('A1:H1')->applyFromArray($headerStyle);
+
+    $fila = 2;
+    foreach ($cuentas as $cuenta) {
+        $sheet->setCellValue("A{$fila}", $cuenta->id);
+        $sheet->setCellValue("B{$fila}", $cuenta->cliente_nombre ?? 'Desconocido');
+        $sheet->setCellValue("C{$fila}", $cuenta->responsable_pedido);
+        $sheet->setCellValue("D{$fila}", $cuenta->estacion);
+        $sheet->setCellValue("E{$fila}", $cuenta->total_estimado);
+        $sheet->setCellValue("F{$fila}", $cuenta->fecha_cierre ?? 'No especificado');
+
+        // Formatear métodos de pago
+        $metodos_pago = json_decode($cuenta->metodos_pago, true);
+        $metodos_pago_str = '';
+        if ($metodos_pago) {
+            foreach ($metodos_pago as $metodo) {
+                $monto = $metodo['monto'];
+                $nombre_metodo = strtolower($metodo['metodo']);
+                if (str_contains($nombre_metodo, 'divisa')) {
+                    $simbolo = '$';
+                } elseif (
+                    str_contains($nombre_metodo, 'bolivar') ||
+                    str_contains($nombre_metodo, 'pago') ||
+                    str_contains($nombre_metodo, 'tarjeta')
+                ) {
+                    $simbolo = 'Bs';
+                } elseif (str_contains($nombre_metodo, 'euro')) {
+                    $simbolo = '€';
+                } else {
+                    $simbolo = '';
+                }
+                $metodos_pago_str .= "{$metodo['metodo']} ({$simbolo}{$monto}), ";
+            }
+            $metodos_pago_str = rtrim($metodos_pago_str, ', ');
+        } else {
+            $metodos_pago_str = 'No especificado';
+        }
+        $sheet->setCellValue("G{$fila}", $metodos_pago_str);
+
+        // Detalle del pedido
+        $productos = json_decode($cuenta->productos, true);
+        $detalle_pedido = '';
+        if ($productos) {
+            foreach ($productos as $p) {
+                $producto = $productos_db->get($p['producto_id']);
+                $nombre = $producto ? $producto->nombre : "ID: {$p['producto_id']}";
+                $precio = number_format($p['precio'], 2, '.', '');
+                $subtotal = number_format($p['subtotal'], 2, '.', '');
+                $detalle_pedido .= "Producto: {$nombre}\nCantidad: {$p['cantidad']}\nPrecio: \${$precio}\nSubtotal: \${$subtotal}\n\n";
+            }
+        } else {
+            $detalle_pedido = 'No especificado';
+        }
+        $sheet->setCellValue("H{$fila}", trim($detalle_pedido));
+
+        // Estilo de celdas con bordes y ajuste de texto
+        $sheet->getStyle("A{$fila}:H{$fila}")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle("A{$fila}:H{$fila}")->getAlignment()->setWrapText(true);
+
+        $fila++;
+    }
+
+    // Autoajuste de columnas
+    foreach (range('A', 'H') as $col) {
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    }
+
+    $writer = new Xlsx($spreadsheet);
+    $fileName = 'cuentas_pagadas.xlsx';
+    $tempFile = tempnam(sys_get_temp_dir(), $fileName);
+    $writer->save($tempFile);
+
+    return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
+}
 
 }

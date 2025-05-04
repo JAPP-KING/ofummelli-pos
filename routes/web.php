@@ -20,6 +20,8 @@ Route::get('/dashboard', function () {
 
 // ✅ Ruta para ver cuentas pagadas (por ahora sin protección de auth)
 Route::get('/cuentas/pagadas', [CuentaController::class, 'pagadas'])->name('cuentas.pagadas');
+Route::get('/cuentas/{cuenta}/edit', [CuentaController::class, 'edit'])->name('cuentas.edit');
+
 
 // Agrupadas bajo autenticación
 Route::middleware('auth')->group(function () {
@@ -41,8 +43,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('productos', ProductoController::class);
     Route::get('/productos/buscar', [ProductoController::class, 'buscar'])->name('productos.buscar');
 
-    // Exportar Excel de Clientes
+    // Exportar Excel
     Route::get('/clientes/exportar', [ClienteController::class, 'exportarExcel'])->name('clientes.exportar');
+    Route::get('/cuentas/exportar-pagadas', [CuentaController::class, 'exportarCuentasPagadas'])->name('cuentas.exportarPagadas');
 
     // Clientes
     Route::resource('clientes', ClienteController::class);
