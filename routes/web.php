@@ -39,6 +39,7 @@ Route::middleware('auth')->group(function () {
 
     // Productos
     Route::resource('productos', ProductoController::class);
+    Route::get('/productos/buscar', [ProductoController::class, 'buscar'])->name('productos.buscar');
 
     // Exportar Excel de Clientes
     Route::get('/clientes/exportar', [ClienteController::class, 'exportarExcel'])->name('clientes.exportar');
