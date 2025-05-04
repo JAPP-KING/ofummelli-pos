@@ -75,33 +75,66 @@ class ClienteController extends Controller
         return redirect()->route('clientes.index')->with('success', 'Cliente eliminado.');
     }
 
-    public function exportarExcel()
-    {
+    public function exportarExcel() {
+
         $clientes = Cliente::all();
 
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        $sheet->setCellValue('A1', 'Nombre');
-        $sheet->setCellValue('B1', 'Apellido');
-        $sheet->setCellValue('C1', 'Cédula');
-        $sheet->setCellValue('D1', 'Teléfono');
-        $sheet->setCellValue('E1', 'Dirección');
-        $sheet->setCellValue('F1', 'Email');
+        // Encabezados
+        $sheet->setCellValue('A1', 'ID');
+        $sheet->setCellValue('B1', 'Nombre');
+        $sheet->setCellValue('C1', 'Apellido');
+        $sheet->setCellValue('D1', 'Cédula');
+        $sheet->setCellValue('E1', 'Teléfono');
+        $sheet->setCellValue('F1', 'Dirección');
+        $sheet->setCellValue('G1', 'Email');
 
+        // Estilo de encabezados
+        $headerStyle = [
+            'font' => ['bold' => true],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FFDEEAF6']
+            ],
+        ];
+        $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
+
+        // Llenar datos
         $fila = 2;
         foreach ($clientes as $cliente) {
-            $sheet->setCellValue("A{$fila}", $cliente->nombre);
-            $sheet->setCellValue("B{$fila}", $cliente->apellido);
-            $sheet->setCellValue("C{$fila}", $cliente->cedula);
-            $sheet->setCellValue("D{$fila}", $cliente->telefono);
-            $sheet->setCellValue("E{$fila}", $cliente->direccion ?? 'No especificado');
-            $sheet->setCellValue("F{$fila}", $cliente->email ?? 'No especificado');
+            $sheet->setCellValue("A{$fila}", $cliente->id);
+            $sheet->setCellValue("B{$fila}", $cliente->nombre);
+            $sheet->setCellValue("C{$fila}", $cliente->apellido);
+            $sheet->setCellValue("D{$fila}", $cliente->cedula);
+            $sheet->setCellValue("E{$fila}", $cliente->telefono);
+            $sheet->setCellValue("F{$fila}", $cliente->direccion ?? 'No especificado');
+            $sheet->setCellValue("G{$fila}", $cliente->email ?? 'No especificado');
             $fila++;
         }
 
+        // Autoajustar tamaño de columnas
+        foreach (range('A', 'G') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Aplicar bordes a toda la tabla
+        $ultimaFila = $fila - 1;
+        $rango = "A1:G{$ultimaFila}";
+        $bordeEstilo = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color' => ['argb' => 'FF000000'],
+                ],
+            ],
+        ];
+        $sheet->getStyle($rango)->applyFromArray($bordeEstilo);
+
+        // Guardar y descargar
         $writer = new Xlsx($spreadsheet);
-        $fileName = 'clientes.xlsx';
+        $fileName = 'clientes_' . now()->format('Y-m-d') . '.xlsx';
         $tempFile = tempnam(sys_get_temp_dir(), $fileName);
         $writer->save($tempFile);
 

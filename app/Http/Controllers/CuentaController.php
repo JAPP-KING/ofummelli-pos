@@ -408,8 +408,9 @@ $cuentas = Cuenta::query()
         $sheet->getColumnDimension($col)->setAutoSize(true);
     }
 
+    // Guardar y descargar
     $writer = new Xlsx($spreadsheet);
-    $fileName = 'cuentas_pagadas.xlsx';
+    $fileName = 'cuentas_pagadas_' . now()->format('Y-m-d') . '.xlsx';
     $tempFile = tempnam(sys_get_temp_dir(), $fileName);
     $writer->save($tempFile);
 
