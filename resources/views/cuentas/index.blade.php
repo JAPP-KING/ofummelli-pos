@@ -32,14 +32,35 @@
                                 <tr>
                                     <td class="px-4 py-2">{{ $cuenta->id }}</td>
                                     <td class="px-4 py-2">
-                                    {{ $cuenta->cliente->nombre ?? $cuenta->cliente_nombre ?? 'Sin cliente' }}
+                                        {{ $cuenta->cliente->nombre ?? $cuenta->cliente_nombre ?? 'Sin cliente' }}
                                     </td>
                                     <td class="px-4 py-2">{{ $cuenta->responsable_pedido ?? '—' }}</td>
                                     <td class="px-4 py-2">{{ $cuenta->estacion }}</td>
                                     <td class="px-4 py-2 text-green-400">${{ number_format($cuenta->total_estimado, 2) }}</td>
                                     <td class="px-4 py-2">{{ $cuenta->fecha_apertura }}</td>
-                                    <td class="px-4 py-2">
-                                        <a href="{{ route('cuentas.show', $cuenta) }}" class="text-blue-500 hover:underline">Ver</a>
+                                    <td class="px-4 py-2 space-x-1">
+                                        <!-- Botón Ver -->
+                                        <a href="{{ route('cuentas.show', $cuenta) }}"
+                                           class="inline-block px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">
+                                            Ver
+                                        </a>
+
+                                        <!-- Botón Editar -->
+                                        <a href="{{ route('cuentas.edit', $cuenta) }}"
+                                           class="inline-block px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded text-sm">
+                                            Editar
+                                        </a>
+
+                                        <!-- Botón Eliminar -->
+                                        <form action="{{ route('cuentas.destroy', $cuenta) }}" method="POST" class="inline-block"
+                                              onsubmit="return confirm('¿Estás seguro de eliminar esta cuenta?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm">
+                                                Eliminar
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             @endforeach

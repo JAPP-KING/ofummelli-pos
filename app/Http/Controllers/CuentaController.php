@@ -13,7 +13,11 @@ class CuentaController extends Controller
 {
     public function index()
     {
-        $cuentas = Cuenta::orderBy('created_at', 'desc')->paginate(10);
+        $cuentas = Cuenta::where('pagada', false)
+                        ->orWhereNull('pagada') // Por si hay registros antiguos sin ese campo
+                        ->orderBy('created_at', 'desc')
+                        ->paginate(10);
+
         return view('cuentas.index', compact('cuentas'));
     }
 
@@ -156,9 +160,37 @@ public function store(Request $request)
         return redirect()->route('cuentas.index')->with('success', 'Cuenta marcada como pagada.');
     }
 
-    public function cuentasPagadas()
-    {
-        $cuentas = Cuenta::where('pagada', true)->latest()->paginate(10);
-        return view('cuentas.pagadas', compact('cuentas'));
-    }
+    public function pagadas()
+{
+    $cuentas = Cuenta::where('pagada', true)
+        ->with('cliente')
+        ->orderBy('fecha_apertura', 'desc')
+        ->paginate(10);
+
+    return view('cuentas.pagadas', compact('cuentas'));
+}
+
+    public function update(Request $request, Cuenta $cuenta)
+        {
+            $request->validate([
+                'cliente_nombre'     => 'nullable|string|max:255',
+                'responsable_pedido' => 'nullable|string|max:255',
+                'estacion'           => 'required|string|max:255',
+                'total_estimado'     => 'nullable|numeric|min:0',
+                'fecha_apertura'     => 'required|date',
+            ]);
+
+            try {
+                $cuenta->cliente_nombre     = $request->cliente_nombre;
+                $cuenta->responsable_pedido = $request->responsable_pedido;
+                $cuenta->estacion           = $request->estacion;
+                $cuenta->total_estimado     = $request->total_estimado;
+                $cuenta->fecha_apertura     = $request->fecha_apertura;
+                $cuenta->save();
+
+                return redirect()->route('cuentas.index')->with('success', 'Cuenta actualizada correctamente.');
+            } catch (\Exception $e) {
+                return back()->withErrors(['error' => 'No se pudo actualizar la cuenta: ' . $e->getMessage()]);
+            }
+        }
 }

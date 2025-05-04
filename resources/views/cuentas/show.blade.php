@@ -14,13 +14,7 @@
 
                 <p class="mb-2">
                     <strong>Cliente:</strong>
-                    @if($cuenta->cliente)
-                        {{ $cuenta->cliente->nombre }}
-                    @elseif($cuenta->cliente_nombre_manual)
-                        {{ $cuenta->cliente_nombre_manual }}
-                    @else
-                    Sin cliente
-                    @endif
+                    {{ $cuenta->cliente_nombre ?? 'No especificado' }}
                 </p>
 
                 <p class="mb-2"><strong>Estación:</strong> {{ $cuenta->estacion }}</p>
@@ -86,13 +80,17 @@
                         Volver
                     </a>
 
-                    <form method="POST" action="{{ route('cuentas.marcarPagada', $cuenta) }}" class="inline-block">
-                    @csrf
-                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                        onclick="return confirm('¿Marcar esta cuenta como pagada?')">
-                        Marcar como Pagada
-                    </button>
-                </form>
+                    @if (!$cuenta->pagada)
+                        <form method="POST" action="{{ route('cuentas.marcarPagada', $cuenta) }}" class="inline-block">
+                            @csrf
+                            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                                onclick="return confirm('¿Marcar esta cuenta como pagada?')">
+                                Marcar como Pagada
+                            </button>
+                        </form>
+                    @else
+                        <span class="text-green-400 font-semibold ml-4">Cuenta ya pagada</span>
+                    @endif
                 </div>
             </div>
         </div>

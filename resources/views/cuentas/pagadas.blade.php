@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    <div class="py-6">
+    <div style="color: white;" class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
 
             @if ($cuentas->count() > 0)
@@ -27,7 +27,7 @@
                                 <tr class="border-t dark:border-gray-700">
                                     <td class="px-4 py-2">{{ $cuenta->id }}</td>
                                     <td class="px-4 py-2">
-                                        {{ $cuenta->cliente->nombre ?? 'No registrado' }}
+                                        {{ $cuenta->cliente_nombre ?? 'No especificado' }}
                                     </td>
                                     <td class="px-4 py-2">{{ $cuenta->responsable_pedido }}</td>
                                     <td class="px-4 py-2">{{ $cuenta->estacion }}</td>
